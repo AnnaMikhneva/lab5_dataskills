@@ -1,0 +1,126 @@
+stages:
+
+  # Stage 1 — Scan corpus, build manifest of all word segments
+  prepare:
+    cmd: python 01_prepare_data.py --params params.yaml
+    deps:
+      - 01_prepare_data.py
+    params:
+      - params.yaml:
+          - corpus_root
+          - min_word_duration
+          - skip_labels
+          - dev_mode
+          - dev_speakers
+          - dev_n_speakers
+    outs:
+      - data/features/manifest.csv
+      - data/features/manifest_meta.json
+
+
+  # Stage 2 - Extract wav2vec2 embeddings (float32)
+  extract:
+    cmd: python 02_extract_features.py --params params.yaml
+    deps:
+      - 02_extract_features.py
+      - data/features/manifest.csv
+    params:
+      - params.yaml:
+          - model_name
+          - pooling
+          - batch_size
+    outs:
+      - data/features/embeddings_float32.npy
+      - data/features/metadata.csv
+
+  # Stage 3 - Convert to float64, float16, int8
+  convert:
+    cmd: python 03_convert_precision.py --params params.yaml
+    deps:
+      - 03_convert_precision.py
+      - data/features/embeddings_float32.npy
+    params:
+      - params.yaml:
+          - quantisation_bits
+    outs:
+      - data/features/embeddings_float64.npy
+      - data/features/embeddings_float16.npy
+      - data/features/embeddings_int8.npy
+      - data/features/scales_int8.npy
+      - data/features/precision_sizes.json
+
+
+  # Stage 4 - Compute cosine distance matrices + intra/inter statistics
+  distances:
+    cmd: python 04_compute_distances.py --params params.yaml
+    deps:
+      - 04_compute_distances.py
+      - data/features/embeddings_float64.npy
+      - data/features/embeddings_float32.npy
+      - data/features/embeddings_float16.npy
+      - data/features/embeddings_int8.npy
+      - data/features/scales_int8.npy
+      - data/features/metadata.csv
+    params:
+      - params.yaml:
+          - distance_metric
+    outs:
+      - data/distances/distances_float64.npy
+      - data/distances/distances_float32.npy
+      - data/distances/distances_float16.npy
+      - data/distances/distances_int8.npy
+      - data/distances/intra_dists_float64.npy
+      - data/distances/intra_dists_float32.npy
+      - data/distances/intra_dists_float16.npy
+      - data/distances/intra_dists_int8.npy
+      - data/distances/inter_dists_float64.npy
+      - data/distances/inter_dists_float32.npy
+      - data/distances/inter_dists_float16.npy
+      - data/distances/inter_dists_int8.npy
+      - data/distances/pairs_intra.csv
+      - data/distances/pairs_inter.csv
+      - data/distances/summary_stats.csv
+      - data/distances/timing.json
+
+  # Stage 5 - Produce all visualisations
+  visualise:
+    cmd: python 05_visualise.py --params params.yaml
+    deps:
+      - 05_visualise.py
+      - data/distances/summary_stats.csv
+      - data/distances/intra_dists_float64.npy
+      - data/distances/intra_dists_float32.npy
+      - data/distances/intra_dists_float16.npy
+      - data/distances/intra_dists_int8.npy
+      - data/distances/inter_dists_float64.npy
+      - data/distances/inter_dists_float32.npy
+      - data/distances/inter_dists_float16.npy
+      - data/distances/inter_dists_int8.npy
+      - data/features/precision_sizes.json
+      - data/distances/timing.json
+    params:
+      - params.yaml:
+          - figure_dpi
+          - figure_format
+          - kde_bw_adjust
+    outs:
+      - data/plots/distances_kde.png
+      - data/plots/distances_bar.png
+      - data/plots/ratio_evolution.png
+      - data/plots/deviation_from_ref.png
+      - data/plots/memory_time.png
+
+  # Stage 6 - Final analysis
+  analyse:
+    cmd: python 06_analyse.py --params params.yaml
+    deps:
+      - 06_analyse.py
+      - data/distances/summary_stats.csv
+      - data/distances/timing.json
+      - data/features/precision_sizes.json
+    params:
+      - params.yaml:
+          - model_name
+          - pooling
+    outs:
+      - data/reports/summary.csv

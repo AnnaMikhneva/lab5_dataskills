@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+# DVC cache (managed by DVC, not git)
+/data/features/*.npy
+/data/distances/*.npy
+/data/plots/
+/data/reports/
+
+# Keep CSVs and JSONs in git (small files)
+!data/features/manifest.csv
+!data/features/manifest_meta.json
+!data/features/precision_sizes.json
+!data/distances/summary_stats.csv
+!data/distances/timing.json
+!data/distances/pairs_intra.csv
+!data/distances/pairs_inter.csv
+!data/reports/summary.csv
+!data/reports/final_report.txt

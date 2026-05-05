@@ -1,0 +1,35 @@
+corpus_root: "FRcorp_textgrids_only"
+
+
+# Minimum word duration in seconds to keep a segment (removes very short clips)
+min_word_duration: 0.05
+# Words to ignore (silence markers, punctuation artefacts)
+skip_labels: ["", " ", "SP", "<sil>"]
+
+model_name: "facebook/wav2vec2-base"
+pooling: "mean"
+batch_size: 1
+
+# 8-bit quantisation: linear symmetric scheme
+#   scale = max(|x|) / 127   ->   q = round(x / scale).clip(-127, 127)
+quantisation_bits: 8
+
+distance_metric: "cosine"
+
+# Visualisation
+figure_dpi: 150
+figure_format: "png"
+kde_bw_adjust: 0.8       # bandwidth multiplier for KDE plots
+
+random_seed: 42
+
+#  quick-test mode
+
+dev_mode: false
+
+# Explicit list of speaker initials to use when dev_mode is true.
+dev_speakers: []
+
+# Number of speakers to auto-select when dev_speakers is [] and dev_mode is true.
+# 2 is enough to get both intra-speaker and inter-speaker pairs.
+dev_n_speakers: 2
